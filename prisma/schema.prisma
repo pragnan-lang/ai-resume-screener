@@ -1,0 +1,77 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String      @id @default(cuid())
+  email        String      @unique
+  name         String
+  passwordHash String
+  role         String      @default("APPLICANT") // "RECRUITER" | "APPLICANT"
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  candidates   Candidate[]
+}
+
+model Job {
+  id          Int         @id @default(autoincrement())
+  title       String
+  description String
+  rubric      String      // JSON string of Rubric structure
+  weights     String      // JSON string: { "skills": 30, "experience": 25, "education": 10, "preferred": 15, "projects": 20 }
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  candidates  Candidate[]
+}
+
+model Candidate {
+  id              String      @id @default(cuid())
+  candidateNumber Int         // Sequential number within the job, e.g. 1, 2, 3
+  jobId           Int
+  job             Job         @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  userId          String?
+  user            User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name            String
+  email           String
+  consentGiven    Boolean     @default(false)
+  resumeFileName  String
+  resumeFilePath  String
+  resumeText      String
+  evaluation      Evaluation?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@unique([jobId, candidateNumber])
+}
+
+model Evaluation {
+  id              String    @id @default(cuid())
+  candidateId     String    @unique
+  candidate       Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  
+  // JSON record: { [itemId: string]: { score: number, quote: string | null } }
+  itemScores      String
+  
+  // Deterministic component scores (0 - 100)
+  skillsMatch     Float
+  experienceMatch Float
+  educationMatch  Float
+  preferredMatch  Float
+  projectsMatch   Float
+  
+  totalScore      Float
+  rank            Int       @default(0)
+  
+  explanation     String
+  missingSkills   String
+  
+  status          String    @default("COMPLETED") // PENDING, COMPLETED, ERROR
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
