@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: ai-resume-screener
+    env: node
+    plan: free
+    region: oregon
+    buildCommand: npm install && npx prisma db push && npm run seed && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        value: file:./dev.db
+      - key: GEMINI_API_KEY
+        sync: false # Prompts user to securely input in Render dashboard
